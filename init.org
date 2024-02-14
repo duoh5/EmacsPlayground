@@ -1,30 +1,45 @@
 #+title Emacs Configuration
-#+PROPERTY: header-args:emacs-lisp :tangle ./init-new.el :mkdirp yes
+#+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
 
-* 패키지 시스템이 이맥스를 자유롭게 할 지으니
+시스템 크래프터가 사용하는 폰트 사이즈가 나한테 마ㅈ지 않은 수도 있으니,
+추후에 수정할 수도 있다고 생각하자.
 #+begin_src emacs-lisp
-;; 패키지 소스
-(require 'package)
 
-(setq package-archives '(("mela" . "https://melpa.org/packages/")
-			 ("org" . "https://orgmode.org/elpa/")
-			 ("elpa" . "https://elpa.gnu.org/packages/")))
+  (defvar efs/default-font-size 140)
+  (defvar efs/default-variable-font-size 140)
+  
+#+end_src
 
-(package-initialize)
-(unless package-archive-contents
-  (package-refresh-contents))
+* 설명을 꼼꼼하게
+가능하면 링크도 표시해두어, 더 찾아볼 수 있도록 하자.
 
-;; Initialize use-package on non-Linux platforms
-(unless (package-installed-p 'use-package)
-  (package-install 'use-package))
+* 패키지 시스템 설정
+#+begin_src emacs-lisp
+
+  ;; 패키지를 사용하겠다는 선언
+  (require 'package)
+
+  (setq package-archives '(("mela" . "https://melpa.org/packages/")
+			   ("org" . "https://orgmode.org/elpa/")
+			   ("elpa" . "https://elpa.gnu.org/packages/")))
+
+  (package-initialize)
+  (unless package-archive-contents
+    (package-refresh-contents))
+
+  ;; Initialize use-package on non-Linux platforms 리눅스외 다른 시스템에서 사용한다고?
+  (unless (package-installed-p 'use-package)
+    (package-install 'use-package))
+
+  (require 'use-package)
+  (setq use-package-always-ensure t)
 
 #+end_src
 
-* 기본적인 모양새
+* 기본적인 모양새 유저 인터페이스
+시작할 때 메시지는 가리고, 
 
 #+begin_src emacs-lisp
-
-  (defvar runemacs/default-font-size 140)
 
   (setq inhibit-startup-message t)
 
@@ -40,9 +55,9 @@
 
   ;; Disable line numbers for some modes
   (dolist (mode '(org-mode-hook
-		term-mode-hook
-		shell-mode-hook
-		eshell-mode-hook))
+		  term-mode-hook
+		  shell-mode-hook
+		  eshell-mode-hook))
     (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 #+end_src
@@ -50,189 +65,405 @@
 ** Font Configuration
 #+begin_src emacs-lisp
   
-  (set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
+  (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
 
   ;; Set the fixed pitch face
-  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 260)
+  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
 
   ;; Set the variable pitch face
-  ;;(set-face-attribute 'variable-pitch nil :font "Cantarell" :height 295 :weight 'regular)
+  ;;(set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-font-size :weight 'regular)
 
+#+end_src
+
+#+RESULTS:
+
+* 키보드 설정
+막상 해보니 나한테는 별로 필요없는 기능. vi단축키는 vi를 사용할 때에만, Emacs 에서까지 사용할 정도는 아니고, 무엇보다 컨트롤 스페이스를 마킹이 아니라 evil모드 활성화/비활성화에 사용하는 것 자체가 혼란스럽게 만듦.
+evil-mode https://evil.readthedocs.io/en/latest/index.html
+general.el https://github.com/noctuid/general.el
+evil-collection https://github.com/emacs-evil/evil-collection
+
+
+#+begin_example
+
+  ;; Make ESC quit prompts
+  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+
+  (use-package general
+    :config
+    (general-create-definer rune/leader-keys
+      :keymaps '(normal insert visual emacs)
+      :prefix "SPC"
+      :global-prefix "C-SPC")
+
+    (rune/leader-keys
+     "t"   '(:ignore t :whick-key "toggles")
+     "tt"  '(counsel-load-theme :which-key "choose theme")))
+
+  (use-package evil
+    :init
+    (setq evil-want-integration t)
+    (setq evil-want-keybinding nil)
+    (setq evil-want-C-u-scroll t)
+    (setq evil-want-C-i-jump nil)
+    :config
+    (evil-mode 1)
+    (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+    (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+
+    ;; Use visual line motions even outside of visual-line-mode buffers
+    (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+    (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+
+    (evil-set-initial-state 'messages-buffer-mode 'normal)
+    (evil-set-initial-state 'dashboard-mode 'normal))
+
+  (use-package evil-collection
+    :after evil
+    :config
+    (evil-collection-init))
+
+#+end_example
+
+* UI Configuration
+** Command Log Mode
+command-log-mode https://github.com/lewang/command-log-mode
+영상에는 키입력을 화면으로 보여주는 기능. 일반 유저들에게 필요 없음.
+
+;;#+begin_src emacs-lisp
+(use-package command-log-mode)
+;;#+end_src
+
+** Color Theme
+doom-themes https://github.com/hlissner/emacs-doom-themes
+둠 테마를 사용하기 위한 설정. =M-x counsel-load-theme= 명령으로 손쉽게 바꿀 수 있다.
+
+#+begin_src emacs-lisp
+
+  (use-package doom-themes
+    :init (load-theme 'doom-dracula t))
+  
+#+end_src
+
+** Better Modeline
+doom-modeline https://github.com/seagle0128/doom-modeline
+둠 모드라인 설정을 더 하려면, customize에 대한 내용도 살펴보자. https://github.com/seagle0128/doom-modeline#customize
+
+시스템에 이맥스를 처음 설치하고, 모드라인을 실행하기 전에 `M-x all-the-icons-install-fonts` 를 실행해야 아이콘이 제대로 보인다.
+
+#+begin_src emacs-lisp
+
+  (use-package all-the-icons)
+
+  (use-package doom-modeline
+    :init (doom-modeline-mode 1)
+    :custom ((doom-modeline-height 15)))
+  
+#+end_src
+
+** Which Key
+which-key https://github.com/justbur/emacs-which-key
+단축키를 누르면 사용가능한 조합을 보여주는 기능.
+화면에 조합을 보여주는 기능에 딜레이를 설정할 수 있다. 초 단위로.
+
+#+begin_src emacs-lisp
+
+  (use-package which-key
+    :init (which-key-mode)
+    :diminish which-key-mode
+    :config
+    (setq which-key-idle-delay 2))
+
+#+end_src
+
+** Ivy and Counsel
+Ivy https://oremacs.com/swiper/
+Ivy-rich https://github.com/Yevgnen/ivy-rich
+ivy가 swiper와 무언가 연결된 거 같은데, 조금 더 깊이 파보자.
+Counsel은 검색을 해서 이것저것 좀 읽어봐야 이해를 할 것 같다.
+
+#+begin_src emacs-lisp
+
+  (use-package ivy
+    :diminish
+    :bind (("C-s" . swiper)
+	   :map ivy-minibuffer-map
+	   ("TAB" . ivy-alt-done)
+	   ("C-l" . ivy-alt-done)
+	   ("C-j" . ivy-next-line)
+	   ("C-k" . ivy-previous-line)
+	   :map ivy-switch-buffer-map
+	   ("C-k" . ivy-previous-line)
+	   ("C-l" . ivy-done)
+	   ("C-d" . ivy-switch-buffer-kill)
+	   :map ivy-reverse-i-search-map
+	   ("C-k" . ivy-previous-line)
+	   ("C-d" . ivy-reverse-i-search-kill))
+    :config
+    (ivy-mode 1))
+
+  (use-package ivy-rich
+    :init
+    (ivy-rich-mode 1))
+
+  (use-package counsel
+    :bind (("C-M-j" . 'counsel-switch-buffer)
+	   :map minibuffer-local-map
+	   ("C-r" . 'counsel-minibuffer-history))
+    :config
+    (counsel-mode 1))
+
+#+end_src
+
+** Helpful
+helpfull https://github.com/Wilfred/helpful
+describe 명령어를 통해 이맥스 내부 돌아가는 사정을 더 잘 알 수 있다 한다.
+
+#+begin_src emacs-lisp
+
+  (use-package helpful
+    :custom
+    (counsel-describe-function-function #'helpful-callable)
+    (counsel-describe-variable-function #'helpful-variable)
+    :bind
+    ([remap describe-function] . counsel-describe-function)
+    ([remap describe-command] . helpful-command)
+    ([remap describe-variable] . counsel-describe-variable)
+    ([remap describe-key] . helpful-key))
+  
+#+end_src
+
+** Text Scaling
+hydra https://github.com/abo-abo/hydra
+
+#+begin_src emacs-lisp
+
+  (use-package hydra)
+
+  (defhydra hydra-text-scale (:timeout 4)
+    "scale text"
+    ("j" text-scale-increase "in")
+    ("k" text-scale-decrease "out")
+    ("f" nil "finished" :exit t))
+
+  (rune/leader-keys
+    "ts" '(hydra-text-scale/body :which-key "scale text"))
+  
 #+end_src
 
 * Org Mode
 
-** 오그 모드의 기본 중 기본
+Org Mode https://orgmode.org/
+
+** Better Font Faces
+
+efs/org-font-setup 함수 지정과 여러가지 모양새를 이쁘게 바꾼다?
+
 #+begin_src emacs-lisp
-(use-package org
-  :hook (org-mode .efs/org-mode-setup)
-  :config
-  (setq org-ellipsis " ▾")
-  ;;	org-hide-emphasis-markers t))
 
-  (setq org-agenda-start-with-log-mode t)
-  (setq org-log-done 'time)
-  (setq org-log-into-drawer t)
-  
-;;  (setq org-agenda-files
-;;	'("~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org"
-  ;;        "~/Projects/Code/emacs-from-scratch/OrgFiles/Birthdays.org"))
+  (defun efs/org-font-setup ()
+    ;; Replace list hyphen with dot 리스트 앞에 점이 보인다고?
+    (font-lock-add-keywords 'org-mode
+			    '(("^ *\\([-]\\) "
+			       (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
-  (require 'org-habit)
-  (add-to-list 'org-modules 'org-habit)
-  (setq org-habit-graph-column 60)
+    ;; Set faces for heading levels
+    (dolist (face '((org-level-1 . 1.2)
+		    (org-level-2 . 1.1)
+		    (org-level-3 . 1.05)
+		    (org-level-4 . 1.0)
+		    (org-level-5 . 1.1)
+		    (org-level-6 . 1.1)
+		    (org-level-7 . 1.1)
+		    (org-level-8 . 1.1)))
+      (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
 
-  (setq org-todo-keywords
-	'((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-	  (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+    (set-face-attribute 'org-block nil :forground nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-table nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
 
-  (setq org-refile-targets
-	'(("Archive.org" :maxlevel . 1)
-	  ("Tasks.org" :maxlevel . 1)))
+#+end_src
 
-  ;; Save Org-buffers after refiling!
-  (advice-add 'org-refile :after 'org-save-all-org-buffers)
+** Basic Config
 
-  (setq org-tag-alist
-	'((:startgroup)
-					;put mutually exclusive tags here
-	  (:endgroup)
-	  ("@errand" . ?E)
-	  ("@home" . ?H)
-	  ("@work" . ?W)
-	  ("agenda" . ?a)
-	  ("planning" . ?p)
-	  ("publish" . ?P)
-	  ("batch" . ?b)
-	  ("note" . ?n)
-	  ("idea" . ?i)
-	  ("thinking" . ?t)
-	  ("recurring" . ?r)))
+#+begin_src emacs-lisp
 
-  ;;Configure custom agenda views
-  (setq org-agenda-custom-commands
-	'(("d" "Dashboard"
-	   ((agenda "" ((org-deadline-warning-days 7)))
-	    (todo "NEXT"
-		  ((org-agenda-overriding-header "Next Tasks")))
-	    (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects"))))))
+  (defun efs/org-mode-setup ()
+    (org-indent-mode)
+    (variable-pitch-mode 1)
+    (visual-line-mode 1))
 
-	("n" "Next Tasks"
-	 ((todo "Next"
-		((org-agenda-overriding-header "Next Tasks")))))
+  (use-package org
+    :hook (org-mode .efs/org-mode-setup)
+    :config
+    (setq org-ellipsis " ▾")
 
-	("W" "Work Tasks" tags-todo "+work")
+    (setq org-agenda-start-with-log-mode t)
+    (setq org-log-done 'time)
+    (setq org-log-into-drawer t)
 
-	;; Low-effort next actions
-	("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
-	 ((org-agenda-overriding-header "Low Effort Tasks")
-	  (org-agenda-max-todos 20)
-	  (org-agenda-files org-agenda-files)))
+    (setq org-agenda-files
+	  '("~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org"
+	    "~/Projects/Code/emacs-from-scratch/OrgFiles/Habits.org"
+	    "~/Projects/Code/emacs-from-scratch/OrgFiles/Birthdays.org"))
 
-	("w" "Workflow Status"
-	 ((todo "WAIT"
-		((org-agenda-overriding-header "Waiting on External")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "REVIEW"
-		((org-agenda-overriding-header "In Review")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "PLAN"
-		((org-agenda-overriding-header "In Planning")
-		 (org-agenda-todo-list-sublevels nil)
-		 (org-agenda-files org-agenda-files)))
-	  (todo "BACKLOG"
-		((org-agenda-overriding-header "Project Backlog")
-		 (org-agenda-todo-list-sublevels nil)
-		 (org-agenda-files org-agenda-files)))
-	  (todo "READY"
-		((org-agenda-overriding-header "Ready for Work")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "ACTIVE"
-		((org-agenda-overriding-header "Active Projects")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "COMPLETED"
-		((org-agenda-overriding-header "Completed Projects")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "CANC"
-		((org-agenda-overriding-header "Cancelled Projects")
-		 (org-agenda-files org-agenda-files)))))
+    (require 'org-habit)
+    (add-to-list 'org-modules 'org-habit)
+    (setq org-habit-graph-column 60)
 
-  (setq org-capture-templates
-	'(("t" "Tasks / Projects")
-	  ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
-	   "* TODO %?\n %U\n %a\n %i" :empty-lines 1)
-	  ("ts" "Clocked Entry Subtask" entry (clock)
-	   "* TODO %?\n %U\n %a\n %i" :empty-lines 1)
+    (setq org-todo-keywords
+	  '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+	    (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
 
-	  ("j" "Journal Entries")
-	  ("jj" "Journal" entry
-	   (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-	   "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
-	   ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
-	   :clock-in :clock-resume
-	   :empty-lines 1)
+    (setq org-refile-targets
+	  '(("Archive.org" :maxlevel . 1)
+	    ("Tasks.org" :maxlevel . 1)))
 
-	  ("jm" "Meeting" entry
-	   (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-	   "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
-	   :clock-in :clock-resume
-	   :empty-lines 1)
+    ;; Save Org-buffers after refiling!
+    (advice-add 'org-refile :after 'org-save-all-org-buffers)
 
-	  ("w" "Workflows")
-	  ("we" "Checking Email" entry (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-	   "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+    (setq org-tag-alist
+	  '((:startgroup)
+	    ;Put mutually exclusive tags here
+	    (:endgroup)
+	    ("@errand" . ?E)
+	    ("@home" . ?H)
+	    ("@work" . ?W)
+	    ("agenda" . ?a)
+	    ("planning" . ?p)
+	    ("publish" . ?P)
+	    ("batch" . ?b)
+	    ("note" . ?n)
+	    ("idea" . ?i)
+	    ("thinking" . ?t)
+	    ("recurring" . ?r)))
 
-	  ("m" "Metrics Capture")
-	  ("mw" "Weight" table-line (file+headline "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org" "Weight")
-	   "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t)))
+    ;;Configure custom agenda views
+    (setq org-agenda-custom-commands
+	  '(("d" "Dashboard"
+	     ((agenda "" ((org-deadline-warning-days 7)))
+	      (todo "NEXT"
+		    ((org-agenda-overriding-header "Next Tasks")))
+	      (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects"))))))
 
-  (define-key global-map (kbd "C-c j")
-	      (lambda () (interactive) (org-capture nil "jj")))
-	  
-  (efs/org-font-setup))
+	  ("n" "Next Tasks"
+	   ((todo "Next"
+		  ((org-agenda-overriding-header "Next Tasks")))))
 
-(use-package org-bullets
-  :after org
-  :hook (org-mode . org-bullets-mode)
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+	  ("W" "Work Tasks" tags-todo "+work")
 
-;; Replace list hyphen with dot
-(font-lock-add-keywords 'org-mode
-			'(("^ *\\([-]\\) "
-			  (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+	  ;; Low-effort next actions
+	  ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+	   ((org-agenda-overriding-header "Low Effort Tasks")
+	    (org-agenda-max-todos 20)
+	    (org-agenda-files org-agenda-files)))
 
-(dolist (face '((org-level-1 . 1.2)
-		(org-level-2 . 1.1)
-		(org-level-3 . 1.05)
-		(org-level-4 . 1.0)
-		(org-level-5 . 1.1)
-		(org-level-6 . 1.1)
-		(org-level-7 . 1.1)
-		(org-level-8 . 1.1)))
-  (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+	  ("w" "Workflow Status"
+	   ((todo "WAIT"
+		  ((org-agenda-overriding-header "Waiting on External")
+		   (org-agenda-files org-agenda-files)))
+	    (todo "REVIEW"
+		  ((org-agenda-overriding-header "In Review")
+		   (org-agenda-files org-agenda-files)))
+	    (todo "PLAN"
+		  ((org-agenda-overriding-header "In Planning")
+		   (org-agenda-todo-list-sublevels nil)
+		   (org-agenda-files org-agenda-files)))
+	    (todo "BACKLOG"
+		  ((org-agenda-overriding-header "Project Backlog")
+		   (org-agenda-todo-list-sublevels nil)
+		   (org-agenda-files org-agenda-files)))
+	    (todo "READY"
+		  ((org-agenda-overriding-header "Ready for Work")
+		   (org-agenda-files org-agenda-files)))
+	    (todo "ACTIVE"
+		  ((org-agenda-overriding-header "Active Projects")
+		   (org-agenda-files org-agenda-files)))
+	    (todo "COMPLETED"
+		  ((org-agenda-overriding-header "Completed Projects")
+		   (org-agenda-files org-agenda-files)))
+	    (todo "CANC"
+		  ((org-agenda-overriding-header "Cancelled Projects")
+		   (org-agenda-files org-agenda-files)))))
 
-;;Ensure that anything that should be fixed-pitch in Org files appears that way
-(set-face-attribute 'org-block nil :forground nil :inherit 'fixed-pitch)
-(set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
-(set-face-attribute 'org-table nil :inherit '(shadow fixed-pitch))
-;;(set-face-attribute 'org-indent nil :inherit '(org-hide fixed-pitch))
-(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+	  (setq org-capture-templates
+		'(("t" "Tasks / Projects")
+		  ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
+		   "* TODO %?\n %U\n %a\n %i" :empty-lines 1)
+		  ("ts" "Clocked Entry Subtask" entry (clock)
+		   "* TODO %?\n %U\n %a\n %i" :empty-lines 1)
 
-(defun efs/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
-	visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
+		  ("j" "Journal Entries")
+		  ("jj" "Journal" entry
+		   (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+		   "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+		   ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
+		   :clock-in :clock-resume
+		   :empty-lines 1)
 
-(use-package visual-fill-column
-  :hook (org-mode . efs/org-mode-visual-fill))
+		  ("jm" "Meeting" entry
+		   (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+		   "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
+		   :clock-in :clock-resume
+		   :empty-lines 1)
+
+		  ("w" "Workflows")
+		  ("we" "Checking Email" entry (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+		   "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+
+		  ("m" "Metrics Capture")
+		  ("mw" "Weight" table-line (file+headline "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org" "Weight")
+		   "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t)))
+
+	  (define-key global-map (kbd "C-c j")
+		      (lambda () (interactive) (org-capture nil "jj")))
+
+	  (efs/org-font-setup))
+    
+#+end_src
+
+*** Nicer Heading Bullets
+
+org-bullets https://github.com/sabof/org-bullets
+오그 불릿, 별 하나, 별 둘, 모양을 바꾼다.
+
+#+begin_src emacs-lisp
+
+  (use-package org-bullets
+    :after org
+    :hook (org-mode . org-bullets-mode)
+    :custom
+    (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+#+end_src
+
+*** Center Org Buffers
+
+visual-fill-column https://github.com/joostkremers/visual-fill-column
+오그모드에서 편집 영역을 중앙으로 모아준다고?
+
+#+begin_src emacs-lisp
+
+  (defun efs/org-mode-visual-fill ()
+    (setq visual-fill-column-width 100
+	  visual-fill-column-center-text t)
+    (visual-fill-column-mode 1))
+
+  (use-package visual-fill-column
+    :hook (org-mode . efs/org-mode-visual-fill))
 
 #+end_src
 
 ** Configure Babel Languages
+
+Org Mode 내부 코드 블록을 실행하거나 이용하려면, language 설정을 해야한다.
+https://orgmode.org/worg/org-contrib/babel/langues.html
+language 리스트를 볼 수 있다.
 
 #+begin_src emacs-lisp
 
@@ -241,10 +472,17 @@
     '((emacs-lisp . t)
       (python . t)))
 
+  (push '("conf-unix" . conf-unix) org-src-lang-modes)
+
 #+end_src
 
+#+RESULTS:
+: ((conf-unix . conf-unix) (C . c) (C++ . c++) (asymptote . asy) (bash . sh) (beamer . latex) (calc . fundamental) (cpp . c++) (ditaa . artist) (desktop . conf-desktop) (dot . fundamental) (elisp . emacs-lisp) (ocaml . tuareg) (screen . shell-script) (shell . sh) (sqlite . sql) (toml . conf-toml))
+
 ** Auto-tangle Configuration Files
-;; 파일을 세이브하면, 자동으로 탱글링하도록
+
+파일을 세이브하면, 자동으로 탱글링하도록
+
 #+begin_src emacs-lisp
 
   (defun efs/org-babel-tangle-config ()
@@ -252,251 +490,87 @@
 			(expand-file-name "~/Projects/EmacsPlayground/init.org"))
       (let ((org-confirm-babel-evaluate nil))
 	(org-babel-tangle))))
-   
+
   (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
-#+end_src
-
-
-* Structure Templates
-#+begin_src emacs-lisp
-  
-  ;; This is needed as of Org 9.2
-  (require 'org-tempo)
-
-  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
-  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-  (add-to-list 'org-structure-template-alist '("py" . "src python"))
-
-#+end_src
-
-
-#+begin_src emacs-lisp
-  
-  (org-babel-tangle)
-  (org-babel-tangle-file "~/Projects/EmacsPlayground/init.org")
-
-#+end_src
-
-* OrgMode
-
-** 이맥스에 바벨이 있어, 여러 언어를 사용할 수 있음이요...
-#+begin_src emacs-lisp
-
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t)
-     (python . t)))
-
-  (push '("conf-unix" . conf-unix) org-src-lang-modes)
-
-#+end_src
-
-** 자동으로 탱글하면, 파일이 생길지어니...
-
-#+begin_src emacs-lisp
-
   
 #+end_src
 
+* Development
 
-각자 제 자리로 갈 시간...
+** Projectile
 
-(defvar runemacs/default-font-size 140)
+Projectile https://projectile.mx/
+소스코드 작성하는데 프로젝트 단위로 편리하게 옮겨갈 수 있다. 게다가 여러 프로그램이 조합될 수 있다.
 
-(setq inhibit-startup-message t)
+#+begin_src emacs-lisp
 
-(scroll-bar-mode -1) ;스크롤바를 보이지 않게 하는
-(tool-bar-mode -1)   ;툴바를 보이지 않게
-(tooltip-mode -1)    ;툴팁을 보이지 않게
-(set-fringe-mode 10) ;좌우여백을 10픽셀로
+  (use-package projectile
+    :diminish projectile-mode
+    :config (projectile-mode)
+    :custom ((projectile-completion-system 'ivy))
+    :bind-keymap
+    ("C-c p" . projectile-command-map)
+    :init
+    ;; Note: Set this to the folder where you keep your Git repos!
+    (when (file-directory-p "~/Projects")
+      (setq projectile-project-search-path '("~/Projects")))
+    (setq projectile-switch-project-action #'projectile-dired))
 
-(menu-bar-mode -1)   ;메뉴바 보이지 않게
+  (use-package counsel-projectile
+    :config (counsel-projectile-mode))
 
-;; 비주얼 벨 설정
-(setq visible-bell t)
+#+end_src
 
+** Magit
 
+Magit https://magit.vc
+이맥스에서 git 을 사용하는 최고의 방법.
 
-(load-theme 'wombat)
+#+begin_src emacs-lisp
 
-;; Make ESC quit prompts
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+  (use-package magit
+    :custom
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
+  (use-package evil-magit
+    :after magit)
 
-(require 'use-package)
-(setq use-package-always-ensure t)
-
-(column-number-mode)
-(global-display-line-numbers-mode t)
-
-;; Disable line numbers for some modes
-(dolist (mode '(org-mode-hook
-		term-mode-hook
-		shell-mode-hook
-		eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
-(use-package command-log-mode)
-
-(use-package ivy
-  :diminish
-  :bind (("C-s" . swiper)
-	 :map ivy-minibuffer-map
-	 ("TAB" . ivy-alt-done)
-	 ("C-l" . ivy-alt-done)
-	 ("C-j" . ivy-next-line)
-	 ("C-k" . ivy-previous-line)
-	 :map ivy-switch-buffer-map
-	 ("C-k" . ivy-previous-line)
-	 ("C-l" . ivy-done)
-	 ("C-d" . ivy-switch-buffer-kill)
-	 :map ivy-reverse-i-search-map
-	 ("C-k" . ivy-previous-line)
-	 ("C-d" . ivy-reverse-i-search-kill))
-  :config
-  (ivy-mode 1))
-
-;; just test
-;; in a certain specific mode, you can use define-key
-;; below lines are sample
-;; (define-key emacs-lisp-mode-map (kbd "C-x M-t") 'counsel-load-theme)
-
-;; 처음 한번 아래 라인을 실행해야 헌다.
-;;
-;; M-x all-the-icons-install-fonts
-
-(use-package all-the-icons)
+  ;; NOTE: Make sure to configure a GitHub token before using this package!
+  ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
+  ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
+  (use-package forge)
   
-(use-package all-the-icons-dired
-  :if (display-graphic-p)
-  :hook (dired-mode . all-the-icons-dired-mode))
+#+end_src
 
-(use-package doom-modeline
-  :ensure t
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 35)))
+** Rainbow Delimiters
 
-(use-package doom-themes
-  :init (load-theme 'doom-dracula t))
+rainbow-delimiters https://github.com/Fanael/rainbow-delimiters
 
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode))
+#+begin_src emacs-lisp
 
-(use-package which-key
-  :init (which-key-mode)
-  :diminish which-key-mode
-  :config
-  (setq which-key-idel-delay 2))
+  (use-package rainbow-delimiters
+    :hook (prog-mode . rainbow-delimiters-mode))
+  
+#+end_src
 
-(use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
+* Applications
 
-(use-package counsel
-  :bind (("M-x" . counsel-M-x)
-	 ("C-x b" . counsel-ibuffer)
-	 ("C-x C-f" . counsel-find-file)
-	 :map minibuffer-local-map
-	 ("C-r" . 'counsel-minibuffer-history)))
+** Some App
 
-(use-package helpful
-  :custom
-  (counsel-describe-function-function #'helpful-callable)
-  (counsel-describe-variable-function #'helpful-variable)
-  :bind
-  ([remap describe-function] . counsel-describe-function)
-  ([remap describe-command] . helpful-command)
-  ([remap describe-variable] . counsel-describe-variable)
-  ([remap describe-key] . helpful-key))   
+Org Mode 에서 작성한 사례인데, tangle 이 안되도록 설정할 수 있다.
+배워서 나중에라도 쓸 것 같은데, 지금 당장 사용하지 않을 경우에 사용해보자.
+noweb 은 아직 이해가 안 되는 매개변수인데, 나중에 살펴보자.
 
-(use-package general
-  :config
-  (general-create-definer rune/leader-keys
-    :keymaps '(normal insert visual emacs)
-    :prefix "SPC"
-    :global-prefix "C-SPC")
+#+NAME: the-value
+#+begin_src emacs-lisp :tangle no
 
-  (rune/leader-keys
-    "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+  (+ 55 100)
 
-(defun rune/evil-hook ()
-   (dolist (mode '(custom-mode
-		  eshell-mode
-		  git-rebase-mode
-		  erc-mode
-		  circe-server-mode
-		  circe-chat-mode
-		  circe-query-mode
-		  sauron-mode
-		  term-mode))
-    (add-to-list 'evil-emacs-state-modes mode)))
+#+end_src
 
-(use-package evil
-   :init
-   (setq evil-want-integration t)
-   (setq evil-want-keybinding nil)
-   (setq evil-want-C-u-scroll t)
-   (setq evil-want-C-i-jump nil)
-   :hook (evil-mode . rune/evil-hook)
-   :config
-   (evil-mode 1)
-   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-   (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+#+begin_src conf :tangle .config/some-app/config :noweb yes
 
-   ;; use visual line motions even outside of visual-line-mode buffers
-   (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-   (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-
-   (evil-set-initial-state 'message-buffer-mode 'normal)
-   (evil-set-initial-state 'dashboard-mode 'normal))
-
-(use-package evil-collection
-   :after evil
-   :config
-   (evil-collection-init))
-
-
-
-(use-package hydra)
-
-(defhydra hydra-text-scale (:timeout 4)
-   "scale text"
-   ("j" text-scale-increase "in")
-   ("k" text-scale-decrease "out")
-   ("f" nil "finished" :exit t))
-
-(rune/leader-keys
-   "ts" '(hydra-text-scale/body :which-key "scale text"))
-
-(use-package projectile
-  :diminish projectile-mode
-   :config (projectile-mode)
-   :custom ((projectile-completion-system 'ivy))
-   :bind-keymap
-   ("C-c p" . projectile-command-map)
-   :init
-   (when (file-directory-p "~/Projects/Code")
-   (setq projectile-project-search-path '("~/Projects/Code")))
-   (setq projectile-switch-project-action #'projectile-dired))
-
-(use-package counsel-projectile
-  :config (counsel-projectile-mode))
-
-(use-package magit
-  :custom
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
-
-   ;; evil-magit 이 evil-collection에 통합되었다고 나와서 주석 처리.
-   ;(use-package evil-magit
-   ;  :after magit)
-
-(use-package forge)
-
-(defun efs/org-mode-setup ()
-  (org-indent-mode)
-  (variable-pitch-mode 1)
-;;  (auto-fill-mode 0)
-  (visual-line-mode 1))
-;;  (setq evil-auto-indent nil))
+  value=<<the-value()>>
+  
+#+end_src
 

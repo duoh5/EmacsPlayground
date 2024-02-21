@@ -1,12 +1,12 @@
 #+title Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
 
-시스템 크래프터가 사용하는 폰트 사이즈가 나한테 마ㅈ지 않은 수도 있으니,
+시스템  크래프터가 사용하는 폰트 사이즈가 나한테 마ㅈ지 않은 수도 있으니,
 추후에 수정할 수도 있다고 생각하자.
 #+begin_src emacs-lisp
 
-  (defvar efs/default-font-size 140)
-  (defvar efs/default-variable-font-size 140)
+  (defvar efs/default-font-size 120)
+  (defvar efs/default-variable-font-size 120)
   
 #+end_src
 
@@ -27,7 +27,8 @@
   (unless package-archive-contents
     (package-refresh-contents))
 
-  ;; Initialize use-package on non-Linux platforms 리눅스외 다른 시스템에서 사용한다고?
+  ;; Initialize use
+  ;; package on non-Linux platforms 리눅스외 다른 시스템에서 사용한다고?
   (unless (package-installed-p 'use-package)
     (package-install 'use-package))
 
@@ -236,7 +237,7 @@ describe 명령어를 통해 이맥스 내부 돌아가는 사정을 더 잘 알
 ** Text Scaling
 hydra https://github.com/abo-abo/hydra
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (use-package hydra)
 
@@ -441,6 +442,9 @@ org-bullets https://github.com/sabof/org-bullets
     (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 #+end_src
+
+#+RESULTS:
+| org-bullets-mode | #[0 \300\301\302\303\304$\207 [add-hook change-major-mode-hook org-fold-show-all append local] 5] | #[0 \300\301\302\303\304$\207 [add-hook change-major-mode-hook org-babel-show-result-all append local] 5] | org-babel-result-hide-spec | org-babel-hide-all-hashes | (lambda nil (display-line-numbers-mode 0)) |
 
 *** Center Org Buffers
 
